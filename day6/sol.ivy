@@ -1,0 +1,17 @@
+# inspired by rsc's solution
+
+sample = 3,4,3,1,2
+
+op day s = ((s - 1) + 7 * s == 0), ((+/(0 == s)) rho 8)
+op n days s = n == 0: s; (n-1) days day s
+
+range = -1+iota 9
+op count s = +/ range o.== s
+op day c = (1 rot c) + c[1] * 0 0 0 0 0 0 1 0 0
+
+op n total s = +/ n days count s
+
+) get "input.ivy"
+80 total sample
+80 total input
+256 total input
