@@ -1,0 +1,18 @@
+# inspired by rsc
+
+sample = 16,1,2,0,4,2,7,1,2,14
+op n distance v = abs n o.- v
+op max v = max/ v
+op distance v = (0,iota max v) distance v
+
+op fuel v = +/ distance v
+min/ fuel sample
+
+)get "input.ivy"
+# min/ fuel input
+
+op integrate v = (1+v) * (v/2)
+op fuel2 v = min/ +/ integrate distance v
+
+fuel2 sample
+fuel2 input
