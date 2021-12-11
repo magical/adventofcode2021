@@ -1,0 +1,20 @@
+
+op a concat b = transp ((transp a) , (transp b))
+op moat a = (a concat (((rho a)[1], 1) rho 9)), ((1, ((rho a)[2] + 1)) rho 9)
+op low m = (m < (-1 rot m)) and (m < (1 rot m)) and (m < (1 flip m)) and (m < (-1 flip m))
+op risk a = m = moat a; 1 + (,low m) sel ,m
+
+op expand a = ((1 rot a) or (-1 rot a) or (1 flip a) or (-1 flip a))
+
+
+op paths3 a = r = (1, rho a); b = a - 10 * a == 9; max/ 3 1 2 transp (r rho b > 1 rot a), (r rho 2 * b > -1 rot a), (r rho 3 * b > 1 flip a), (r rho 4 * b > -1 flip a)
+
+op p iterate x = (x * p == 0) + (-1 rot x * p == 1) + (1 rot x * p == 2) + (-1 flip x * p == 3) + (1 flip x * p == 4)
+
+op p basins a = b = p iterate a; and/, b == a: a; p basins b
+
+op basins a = (paths3 a) basins (a != 9)
+
+# ) get "input.ivy"
+# b = ,basins (moat 100 100 rho input)
+# */ b[3 take down b]
