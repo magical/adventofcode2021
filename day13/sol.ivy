@@ -1,0 +1,40 @@
+) get "input.ivy" 
+
+op draw coords =
+    w = 1+max/ coords[1]
+    h = 1+max/ coords[2]
+    h w rho (iota w*h) in 1 + +/ (transp coords) * 1 w
+
+
+# everything below n stays the same
+# everything above n becomes n + -(x - n) => 2*n - x
+op n fold v = ((v<n)*v) + (v>n)*((2*n) - v)
+op n foldx coords = (rho coords) rho (n fold coords[1]), (coords[2])
+op n foldy coords = (rho coords) rho (coords[1]), (n fold coords[2])
+
+) get "sample.ivy"
+sample = transp (((rho sample)/2), 2) rho sample
+
+op uniqcount coords =
+    w = 1+max/coords[1]
+    v = +/ (transp coords) * 1 w
+    v = v[up v]
+    +/ (v != 1 rot v)
+
+#draw 2 3 rho iota 6
+rho sample
+sample
+draw sample
+""
+draw 7 foldy sample
+""
+draw 5 foldx 7 foldy sample
+uniqcount 7 foldy sample
+
+input = transp (((rho input)/2), 2) rho input
+rho input
+#draw input
+uniqcount 655 foldx input
+
+
+draw 6    foldy 13   foldy 27   foldy 40   foldx 55   foldy 81   foldx 111  foldy 163  foldx 223  foldy 327  foldx 447  foldy 655  foldx input
