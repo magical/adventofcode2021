@@ -37,7 +37,7 @@ def score(seq):
     top, bottom = h[0][1], h[-1][1]
     return top - bottom
 
-def score_after(init, n):  
+def score_after(init, n):
     seq, rules = init
     q = Counter(a+b for a, b in zip(seq, seq[1:]))
     for _ in range(n):
