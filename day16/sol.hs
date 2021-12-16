@@ -71,4 +71,15 @@ main = do
     sample >>= ap trace (print . parse . unhexStr)
     "A0016C880162017C3686B18A3D4780" & (print . versionSum . parse . unhexStr)
     input >>= (print . versionSum . parse . unhexStr)
+    input >>= (print . eval . parse . unhexStr)
+
+
+eval (Lit _ _ v) = v
+eval (Op _ 0 s) = sum (map eval s)
+eval (Op _ 1 s) = product (map eval s)
+eval (Op _ 2 s) = foldr1 min (map eval s)
+eval (Op _ 3 s) = foldr1 max (map eval s)
+eval (Op _ 5 [a,b]) = if eval a > eval b then 1 else 0
+eval (Op _ 6 [a,b]) = if eval a < eval b then 1 else 0
+eval (Op _ 7 [a,b]) = if eval a == eval b then 1 else 0
 
