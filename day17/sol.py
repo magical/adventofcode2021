@@ -26,8 +26,8 @@ def brute(target):
     best = (0,0)
     maxy = 0
     count = 0
-    for x in range(0,200):
-        for y in range(-200,200):
+    for x in range(0,target[1][0]+1):
+        for y in range(target[0][1],abs(target[0][1])+1):
             height, ok = fire((x,y), target)
             if ok:
                 count += 1
