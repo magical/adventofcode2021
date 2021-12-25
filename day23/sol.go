@@ -7,28 +7,26 @@ import (
 )
 
 func main() {
-	fmt.Println(search(sample()))
-	fmt.Println(search(input()))
+	fmt.Println(search(newnode("BA..CD..BC..DA"))) // sample
+	fmt.Println(search(newnode("AB..CA..BD..DC"))) // input
+
+	fmt.Println(search4(newnode("BDDACCBDBBACDACA")))
+	fmt.Println(search4(newnode("ADDBCCBABBADDACC"))) // input
 }
 
-func sample() *node {
+func newnode(init string) *node {
 	n := new(node)
-	for i, c := range "BACDBCDA" {
-		n.spot[LEN+i] = spot(c)
-	}
-	return n
-}
-func input() *node {
-	n := new(node)
-	for i, c := range "ABCABDDC" {
-		n.spot[LEN+i] = spot(c)
+	for i, c := range init {
+		if c != '.' {
+			n.spot[LEN+i] = spot(c)
+		}
 	}
 	return n
 }
 
 type spot int8
 type node struct {
-	spot [11 + 2*4]spot // hallway + corridors
+	spot [LEN + 4*4]spot // hallway + corridors
 }
 
 type entry struct {
@@ -56,6 +54,13 @@ func less(a, b *entry) bool {
 type nodelist []entry
 
 func search(start *node) int {
+	return search_(start, 2)
+}
+func search4(start *node) int {
+	return search_(start, 4)
+}
+
+func search_(start *node, maxdepth int) int {
 	// A*
 	var queue nodelist
 	queue = append(queue, entry{node: start, score_: start.distance()})
@@ -86,9 +91,7 @@ func search(start *node) int {
 		pushMove := func(src, dst int) {
 			n := here.move(src, dst)
 			if !seen[*n] {
-				moves := distance(src, dst)
-				w := weight(here.spot[src])
-				cost := w * moves
+				cost := here.moveCost(src, dst)
 				heap.Push(&queue, entry{
 					score_: base+cost+n.distance(),
 					node: n,
@@ -108,28 +111,33 @@ func search(start *node) int {
 				// can move into a corridor only if it would make them home
 				// so only a home corridor and only if it's not occupied by another type of thing
 				x, _ := i, 0 // coords(i)
-				me := here.spot[i]
 				h := here.homeOf(i)
 				if !here.clearBetween(x, h) {
 					continue neighbor
 				}
-				j := LEN + h - 2
-				if here.spot[j] == 0 && here.spot[j+1] == 0 {
-					pushMove(i, j+1)
+				if !here.isHomeCorridorOpen(h) {
+					continue neighbor
 				}
-				if here.spot[j] == 0 && here.spot[j+1] == me {
-					pushMove(i, j)
+				// go as deep as possible
+				for y := 1; y <= maxdepth; y++ {
+					j := cindex(h, y)
+					if y == maxdepth || here.spot[j+1] != 0 {
+						pushMove(i, j)
+						break
+					}
 				}
 			} else {
 				// corridor spots
-				// if top spot blocked, no move
+				// if spots above are blocked, no move
 				x, y := coords(i)
-				if y == 2 && here.spot[i-1] != 0 {
-					continue neighbor
+				for j := y-1; j > 0; j-- {
+					if here.spot[i-j] != 0 {
+						continue neighbor
+					}
 				}
 				// if thing is home already, no moves
 				if here.homeOf(i) == x {
-					if y == 2 || y == 1 && here.homeOf(i+1) == x {
+					if y == maxdepth || here.isHomeCorridorOpen(x) {
 						continue neighbor
 					}
 				}
@@ -152,13 +160,6 @@ func search(start *node) int {
 				}
 			}
 		}
-		/*
-		   for n in G.neighbors(here):
-		       if n not in seen:
-		           r = G.risk(n)
-		           if r < MAX:
-		               h = distance(n, end)
-		               heappush(queue, (c+r+h-k, n))*/
 	}
 	return -1
 }
@@ -230,21 +231,43 @@ func (n *node) moveCost(src, dst int) int {
 	if n.spot[src] == 0 {
 		return 0
 	}
-	panic("TODO")
+	moves := distance(src, dst)
+	w := weight(n.spot[src])
+	cost := w * moves
+	return cost
 }
 
+// a corridor is open if no wrong things are in it
+func (n *node) isHomeCorridorOpen(x int) bool {
+	i := cindex(x,1)
+	for y := 1; y <= CLEN; y++ {
+		if n.spot[i] != 0 && n.homeOf(i) != x {
+			return false
+		}
+		i++
+	}
+	return true
+}
+
+
 // #############
-// #123456789ab#
-// ###c#e#g#i###
-//   #d#f#h#e#
+// #0123456789a#
+// ###b#d#f#h###
+//   #c#e#g#i#
 //   #########
 
 const LEN = 11
+const CLEN = 4
 
 func inHallway(i int) bool { return i < LEN }
 
 func isEntrance(i int) bool {
 	return i == 2 || i == 4 || i == 6 || i == 8
+}
+
+// precondition: isEntrance(x), y > 0
+func cindex(x int, y int) int {
+	return LEN + (x - 2)/2*CLEN + (y - 1)
 }
 
 // decompose a spot into its x, y coords
@@ -253,8 +276,8 @@ func coords(i int) (x, y int) {
 	if i < LEN {
 		return i, 0
 	} else {
-		y := 1 + (i-LEN)%2
-		x := 2 + ((i - LEN) / 2 * 2)
+		y := 1 + (i-LEN)%CLEN
+		x := 2 + ((i - LEN) / CLEN * 2)
 		return x, y
 	}
 }
@@ -341,14 +364,11 @@ func (n *node) homecost(i int) int {
 	}
 	w := weight(n.spot[i])
 	x, y := coords(i)
-	if y == 1 || y == 2 {
+	if y > 0 {
 		// if thing is home already, no cost
 		if n.homeOf(i) == x {
-			if y == 2 || y == 1 && n.homeOf(i+1) == x {
+			if n.isHomeCorridorOpen(x) {
 				return 0
-			}
-			if y == 1 {
-				return w * 4
 			}
 		}
 	}
@@ -361,6 +381,8 @@ func (n *node) String() string {
 	const template = `#############
 #...........#
 ###.#.#.#.###
+  #.#.#.#.#
+  #.#.#.#.#
   #.#.#.#.#
   #########
 `
