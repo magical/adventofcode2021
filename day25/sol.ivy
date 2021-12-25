@@ -1,0 +1,32 @@
+
+op show x = ".>v"[1+x]
+
+)get "sample.ivy"
+sample = 9 10 rho sample
+
+sample
+show sample
+""
+show 1 flip sample
+
+op step1 x =
+    v1 = (x == 1) and (1 rot x == 0)
+    (x - v1) + (-1 rot v1)
+
+op step2 x =
+    v2 = 2 * (x == 2) and (1 flip x == 0)
+    (x - v2) + (-1 flip v2)
+    
+    
+op step x = step2 step1 x
+
+op count x =
+    y = step x
+    and/, x == y: 1
+    1 + count y
+
+count sample
+
+) get "input.ivy"
+input = 137 139 rho input
+count input
