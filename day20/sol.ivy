@@ -1,0 +1,44 @@
+) origin 0
+op decode x = ".#" iota x
+
+sampleRules = decode "..#.#..#####.#.#.#.###.##.....###.##.#..###.####..#####..#....#..#..##..###..######.###...####..#..#####..##..#.#####...##.#.#..#.##..#.#......#.###.######.###.####...#.##.##..#..#..#####.....#.#....###..#.##......#.....#..#..#..##..#...##.######.####.####.#.#...#.......#..#.#.#...####.##.#......#..#...##.#.##..#...##.#.##..###.#......#.#.......#.#.#.####.###.##...#.....####.#..#..#.##.#....##..#.####....##...##..#...#......#.#.......#.......##..####..#...#.#.#...##..#.#..###..#####........#..####......#..#"
+
+sample = 5 5 rho decode "#..#.#....##..#..#....###"
+
+op extend1 x = 0,(0,x,0),0
+op extend x = extend1 transp extend1 transp x
+op extend x = extend1 transp extend1 transp x
+
+s = extend sample
+
+op rowbits s = (4 * -1 rot s) + (2 * s) + (1 rot s)
+op colbits s = (64 * -1 flip s) + (8 * s) + (1 flip s)
+
+op r step s = r[colbits rowbits extend s]
+op display x = ".#"[x]
+
+extend sample
+display sampleRules step sample
++/, sampleRules step sampleRules step sample
+
+inputRules = decode "###..#...#..##.######.###.##.#####.#.....###..##..####.##...##..##.#......##.###....#.##.##.##..#..#..#.#..#.#.#.###..##.##....###..#..#...#.#....##...#...###.###..#..#.####...#..##.#...#..####.#.#####.......#..###.#...#..###.#.######....#...#..#..##.....#.#...#.####.#####....####..#.##..#.#.#.#.#...#.#.##..##...#.#.#.##.##.#.####.#....#..#.##.#.##.###.#.###.###..#....#####.#..#.###.#####.#..#.#..#.#.##.#..#.###.##..##.#....##..#...#.#.####....#.##.#.#.......###..#...#..##.#####.#...####..#.##.###.###......"
+
+) get "input.ivy"
+rho input
+input = 100 100 rho decode input
+
+op r oddstep s = r step s
+op r evenstep s = r[colbits rowbits not extend not s]
++/, inputRules evenstep inputRules oddstep extend input
+
+op n onestep s =
+    n == 0: +/, s
+    (n-1) onestep sampleRules step s
+
+50 onestep sample
+
+op n twostep s =
+    n == 0: +/, s
+    (n-2) twostep inputRules evenstep inputRules oddstep s
+
+50 twostep input
