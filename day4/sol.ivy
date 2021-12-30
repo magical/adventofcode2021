@@ -1,0 +1,67 @@
+op wins b = 
+    row = or/and/ b
+    col = or/and/ transp b
+    row or col
+
+op n wins b =
+    wins b in n
+
+null = 0 rho 0
+
+op n xwin b =
+    (rho n)[1] == 0: null
+    (n[1] wins b), (1 drop n) xwin b
+
+op n winx b =
+    (rho b)[1] == 0: null
+    (n wins b[1]), n winx (1 drop b)
+
+# n xwinx b = n @wins@ b
+op n xwinx b =
+    r = n[1] winx b
+    r = (1,rho r) rho r
+    (rho n)[1] == 1: r
+    r, (1 drop n) xwinx b
+
+op n firstwin b = (n xwin b) iota 1
+
+op expand n = n * ((iota rho n) o.>= iota rho n)
+
+op n score b =
+    w = (expand n) xwinx b
+    i = ((or/w) iota 1)[1]
+    j = (w[i] iota 1)[1]
+    s = n[i] * +/, b[j] * not b[j] in n[iota i]
+    s
+
+op n last b =
+    w = (expand n) xwinx b
+    j = (up +/ (transp w))[1] # last-winning board
+    i = ((transp w)[j] iota 1)[1]
+    s = n[i] * +/, b[j] * not b[j] in n[iota i]
+    s
+
+#) seed 100
+#board = 5 5 rho 25 ? 100
+#nums = 50 ? 100
+##expand nums
+#board
+#nums
+
+#(expand nums) @wins@ (1 5 5 rho board)
+#(expand nums) wins board
+#(expand nums) firstwin board
+#(expand nums) xwinx (50 5 5 rho board)
+
+#nums score board
+
+snums = 7,4,9,5,11,17,23,2,0,14,21,24,10,16,13,6,15,25,12,22,18,20,8,19,3,26,1
+sboards = 3 5 5 rho 22 13 17 11  0 8  2 23  4 24 21  9 14 16  7 6 10  3 18  5 1 12 20 15 19 3 15  0  2 22 9 18 13 17  5 19  8  7 25 23 20 11 10 24  4 14 21 16 12  6 14 21 17 24  4 10 16 15  9 19 18  8 23 26 20 22 11 13  6  5 2  0 12  3  7
+snums score  sboards
+
+) get "input.ivy"
+inums score iboards
+
+snums last sboards
+inums last iboards
+
