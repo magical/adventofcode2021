@@ -1,37 +1,75 @@
 import numpy as np
 import random
 from collections import Counter
+
 def solve(scanner, threshold=12):
-    # choose one scanner
-    # for each other scanner,
-    #   try every transformation
-    #   sort points
-    #   find the transformation which maximizes the number of overlapping points
-    #
-    s = scanner[0]
-    s = np.array(s) # n x 3
-    print(s)
+    # compute rotation & offset invariant signatures of each scanner's beacons
+    def sig(s):
+        s = np.array(s)
+        diff = np.subtract(s[np.newaxis,:,:], s[:,np.newaxis,:])
+        diff = diff[~np.eye(diff.shape[0], diff.shape[1], dtype=bool)] # flatten and ignore diagonal
+        #diff = diff.reshape(-1,3)
+        return sorted(np.sum(np.abs(diff)**3, axis=1))
+
+    sigs = [sig(r) for r in scanner]
+
+    def incommon(a,b):
+        i = j = 0
+        count = 0
+        while i < len(a) and j < len(b):
+            if a[i] == b[j]:
+                count += 1
+                i += 1
+                j += 1
+            elif a[i] < b[j]:
+                i += 1
+            elif a[i] > b[j]:
+                j += 1
+        return count
+
+    # construct adjacency matrix of overlapping scanners
+    overlaps = np.zeros((len(scanner),len(scanner)), dtype=int)
+    for i in range(len(scanner)):
+        for j in range(len(scanner)):
+            if i < j:
+                overlaps[i][j] = overlaps[j][i] = incommon(sigs[i], sigs[j])
+    #print(overlaps)
+    overlaps = (overlaps >= threshold * (threshold-1))
+    print(overlaps.astype(int))
+
+    # start with a single scanner,
+    # for each remaining scanner,
+    # pick and already-processed scanner that it overlaps with
+    # and try all possible rotations to align them
+
+    ss = [np.array(scanner[0])] # n x 3
+    #print(ss)
+
     indices = list(range(1,len(scanner)))
-    seen = set(map(tuple,s))
+    done = [0]
     offsets = []
     while indices:
+        pair = None
         for i in indices:
-            print("index", i)
-            r = scanner[i]
-            r = np.array(r)
-            #print(r)
-            r,offset = find_transformation(s, r)
-            if r is None:
-                continue
-            add = [x for x in map(tuple,r) if x not in seen]
-            seen.update(add)
-            s = np.append(s,add,axis=0)
-            offsets.append(offset)
-            indices.remove(i)
-            print(s.shape)
-            break
+            for j,x in zip(done,ss):
+                if overlaps[i][j]:
+                    s = x
+                    pair = i,j
+        if not pair:
+            print("couldn't find overlapping pair done=%r indices=%r" % (done, indices))
+            return
+        i,j = pair
+        print("index", i, j)
+        r = np.array(scanner[i])
+        #print(r)
+        rr,offset = find_transformation(s, r)
+        ss.append(rr)
+        offsets.append(offset)
+        done.append(i)
+        indices.remove(i)
 
     # part 1: number of unique points
+    seen = set(tuple(p) for s in ss for p in s)
     print(len(seen))
 
     # part 2: find the max sum of distances
@@ -46,6 +84,7 @@ def find_transformation(s,r,threshold=12):
         print("found overlap w/", score)
         return r,offset
     except ValueError:
+        print("couldn't find valid transformation")
         return None,None
 
 
